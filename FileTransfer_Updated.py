@@ -55,7 +55,7 @@ def merge_and_move_folders(src_folder, dest_folder):
         return False
 
 
-def transfer_folder_with_retry(source_folder, destination_folder, max_retries, retry_delay):
+def transfer_folder_with_retry(source_folder, destination_folder, max_retries = 10, retry_delay = 5):
     """ Transfer a source folder to the destination folder.
     Retry if a network-related error occurs during transfer.
 
@@ -111,15 +111,13 @@ def transfer_folder_with_retry(source_folder, destination_folder, max_retries, r
             return False
 
 
-def transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries, retry_delay):
+def transfer_multiple_folders_with_retry(source_folders, destination_folder):
     """ Transfer multiple source folders to the destination folder one by one.
     Retry if a network-related error occurs during transfer for each folder.
 
     args:
         source_folders(list of strings): list of paths to source folders
         destination_folder(str): path to destination folder
-        max_retries(int): number of retries before process is stopped
-        retry_delay(float): delay in seconds before retry
     """
     try:
         with tqdm(total=len(source_folders), desc="Transferring Folders", unit="folder") as folder_pbar:
@@ -150,4 +148,4 @@ if __name__ == "__main__":
     ]
     destination_folder = "/Path/To/Destination/Folder"
 
-    transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries=10, retry_delay=5)
+    transfer_multiple_folders_with_retry(source_folders, destination_folder)
