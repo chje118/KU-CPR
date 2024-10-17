@@ -2,11 +2,9 @@
 # Gaps in network connection results in interrupted file transfer, with error message: "An unexpected network error occurred".
 
 import os
-from platform import machine
 import shutil
 from pathlib import Path
 import time
-from tkinter.messagebox import RETRY
 from tqdm import tqdm
 
 def merge_and_move_folders(src_folder, dest_folder):
