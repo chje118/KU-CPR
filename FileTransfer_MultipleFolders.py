@@ -15,7 +15,6 @@ def merge_and_move_folders(src_folder, dest_folder):
     args:
         src_folder(str): path to source folder
         dest_folder(str): path to destination folder
-    
     """
     
     try: 
@@ -65,7 +64,6 @@ def transfer_folder_with_retry(source_folder, destination_folder, max_retries, r
         destination_folder (str): path to destination folder
         max_retries (int): number of retries before process is stopped, default 10
         retry_delay (float): delay in seconds from error to transfer is retried, default 5 seconds
-        
     """
     
     retry_count = 0
@@ -100,13 +98,12 @@ def transfer_folder_with_retry(source_folder, destination_folder, max_retries, r
                 break # Exit the loop if it's not a network error
             
             retry_count += 1
-
+            time.sleep(retry_delay)  # Wait before retrying
+            
             if retry_count > max_retries:
                 print(f"Exceeded maximum retries. Transfer failed.")
                 raise e # Raise the exception after the final attempt
-
-                time.sleep(retry_delay)  # Wait before retrying
-
+            
         except KeyboardInterrupt:
             print("Process interrupted by user.")
             return False
