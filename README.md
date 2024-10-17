@@ -15,7 +15,7 @@ Merges the contents of the source folder into the destination folder. If a file 
 - transfer_folder_with_retry(source_folder, destination_folder, max_retries, retry_delay)
 Transfers a source folder to the destination folder with retries in case of network-related errors.
 
-- transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries, retry_delay)
+- transfer_multiple_folders_with_retry(source_folders, destination_folder)
 Transfers multiple source folders to the destination folder, one by one, with retries in case of network-related errors.
 
 Usage:
@@ -27,7 +27,7 @@ source_folders = [
   "/Path/To/Folder/3"
 ]
 destination_folder = "/Path/To/Destination/Folder"
-transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries=10, retry_delay=5)
+transfer_multiple_folders_with_retry(source_folders, destination_folder)
 
 Dependencies:
 - os
