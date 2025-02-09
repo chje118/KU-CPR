@@ -8,15 +8,15 @@ import time
 from tqdm import tqdm
 
 # Change script to class objects
-class FolderTransfer: 
-    def __init__(self, retry_delay=5):
-        """ Initialize the FolderTransfer object.
+class FileTransfer: 
+    def __init__(self, retry_delay:int =5):
+        """ Initialize the FileTransfer object.
         args:
             retry_delay (int): Time in seconds to wait before retrying a failed transfer.
         """
         self.retry_delay = retry_delay
-
-    def merge_and_move_folders(self, source_folder, destination_folder):
+    
+    def merge_and_move_folders(self, source_folder:str, destination_folder:str) -> bool:
         """ Merge source folder into destination folder.
         If a file already exists in the destination folder, it is skipped.
         args:
@@ -55,30 +55,29 @@ class FolderTransfer:
                 print(f"Error moving folder: {e}")
                 return False # Exit the loop if it's not a network error
 
-    def transfer_folder_with_retry(self, source_folder, destination_folder):
+    def transfer_folder_with_retry(self, source_folder:str, destination_folder:str)->bool:
         """ Transfer a single source folder to the destination folder.
         Retry if a network-related error occurs during transfer.
         args:
             source_folder (str): path to source folder
             destination_folder (str): path to destination folder
         """
+        source = Path(source_folder)
+        destination = Path(destination_folder) / source.name # Create destination folder path
+                
         while True:
             try:
-                source = Path(source_folder)
-                destination = Path(destination_folder)
-                new_destination = destination / source.name # Create destination folder path
-
-                if new_destination.exists(): #Merge folder, if folder already exists
-                    print(f"Destination folder '{new_destination}' already exists. Merging and moving folders.")
-                    if not merge_and_move_folders(source_folder, new_destination): # Checks return value
+                if destination.exists(): #Merge folder, if folder already exists
+                    print(f"Folder '{destination}' already exists. Merging folders.")
+                    if not self.merge_and_move_folders(source_folder, destination): # Checks return value
                         print("Transfer failed. Error while merging folders.")
-                        break
+                        return
                 else:
-                    shutil.move(source, new_destination) # Move the entire folder to the destination
+                    shutil.move(source, destination) # Move the entire folder to the destination
                     print(f"Successfully moved: {source}")
 
                 print("Folder transfer complete.")
-                break  # Exit the loop if the transfer was successful
+                return
 
             except (shutil.Error) as e:
                 if "network" in str(e).lower(): # Retry if a network error is detected
@@ -86,9 +85,9 @@ class FolderTransfer:
                     time.sleep(self.retry_delay) # Wait before retrying
                 else: 
                     print(f"Error moving folder: {e}")
-                    break # Exit the loop if it's not a network error
+                    return
 
-    def transfer_multiple_folders_with_retry(self, source_folders, destination_folder):
+    def transfer_multiple_folders_with_retry(self, source_folders: list[str], destination_folder: str):
         """ Transfer multiple source folders to the destination folder one by one.
         args:
             source_folders(list of strings): list of paths to source folders
@@ -100,7 +99,7 @@ class FolderTransfer:
                 continue
         
             print(f"\nTransferring folder: {source_folder}")
-            self.transfer_folder_with_retry(source_folder, destination_folder)            
+            self.transfer_folder_with_retry(source_folder, destination_folder)     
 
 # Example usage. Script executes if run directly (not when imported as a module).
 if __name__ == "__main__":
