@@ -111,5 +111,5 @@ if __name__ == "__main__":
     destination_folder = "/Path/To/Destination/Folder"
 
     # Create an instance of FolderTransfer with a retry delay of 5 seconds
-    transfer_tool = FolderTransfer(retry_delay=5)
+    transfer_tool = FileTransfer(retry_delay=5)
     transfer_tool.transfer_multiple_folders_with_retry(source_folders, destination_folder)
