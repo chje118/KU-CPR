@@ -93,7 +93,7 @@ class FileTransfer:
             source_folders(list of strings): list of paths to source folders
             destination_folder(str): path to destination folder
         """
-        for source_folder in tqdm(source_folders, , desc="Transferring folders"):
+        for source_folder in tqdm(source_folders, desc="Transferring folders"):
             if not os.path.exists(source_folder): # Check if source folder exists, if not, continue with the next folder
                 print(f"Source folder '{source_folder}' does not exist. Skipping.")
                 continue
