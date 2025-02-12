@@ -12,6 +12,10 @@ except Exception as e:
     print(f"Failed to load slide: {e}")
     exit()
 
+# Get thumbnail to explore image
+thumbnail = slide.get_thumbnail([1000,1000])
+thumbnail = thumbnail.convert("RGB")
+thumbnail.save('thumbnail_example.png')
 
 # Print metadata related to the bounds of the tissue
 bounds_x = slide.properties.get("openslide.bounds-x", 0)
