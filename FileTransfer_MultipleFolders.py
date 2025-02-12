@@ -7,137 +7,99 @@ from pathlib import Path
 import time
 from tqdm import tqdm
 
-def merge_and_move_folders(src_folder, dest_folder):
-    """ Move source folder into destination folder.
-    Merge folders if destination folder already exists.
-    If a file already exists in the destination folder, it is skipped.
-
-    args:
-        src_folder(str): path to source folder
-        dest_folder(str): path to destination folder
-    """
+# Change script to class objects
+class FileTransfer: 
+    def __init__(self, retry_delay:int =5):
+        """ Initialize the FileTransfer object.
+        args:
+            retry_delay (int): Time in seconds to wait before retrying a failed transfer.
+        """
+        self.retry_delay = retry_delay
     
-    try: 
-        # If folder exists, merge the contents
-        for src_dir, subdirs, files in os.walk(src_folder):
+    def merge_and_move_folders(self, source_folder:str, destination_folder:str) -> bool:
+        """ Merge source folder into destination folder.
+        If a file already exists in the destination folder, it is skipped.
+        args:
+            source_folder(str): path to source folder
+            destination_folder(str): path to destination folder
+        returns: 
+            bool: True if successful, False otherwise.
+        """
+        try: 
+            for src_dir, subdirs, files in os.walk(source_folder):
+                relative_path = os.path.relpath(src_dir, source_folder)
+                dest_dir = os.path.join(destination_folder, relative_path) # Construct destination path
 
-            # Construct the destination path for the current directory
-            relative_path = os.path.relpath(src_dir, src_folder)
-            dest_dir = os.path.join(dest_folder, relative_path)
-        
-            # Create directories in the destination folder if they don't exist
-            os.makedirs(dest_dir, exist_ok = True)
-        
-            # Move files from the source to the destination directory
-            # tqdm is used to show a progress bar for the file transfer for each folder
-            for file in tqdm(files, desc=f"Moving files in {src_folder}",leave = False):
-                src_file = os.path.join(src_dir, file)
-                dest_file = os.path.join(dest_dir, file)
+                os.makedirs(dest_dir, exist_ok = True) # Create directories in the destination folder if they don't exist
             
-                # If the file already exists, skip it
-                if os.path.exists(dest_file):
-                    print(f"File '{dest_file}' already exists. Skipping.")
-                    continue
+                for file in tqdm(files, desc=f"Merging files in {src_dir}"):
+                    src_file = os.path.join(src_dir, file)
+                    dest_file = os.path.join(dest_dir, file)
 
-                else:
-                # Move the file if it doesn't exist
-                    shutil.move(src_file, dest_file)
+                    if os.path.exists(dest_file): # If the file already exists, skip it
+                        print(f"File '{dest_file}' already exists. Skipping.")
+                        continue
+                
+                    shutil.move(src_file, dest_file) # Move the file if it doesn't exist
                     print(f"File '{src_file}' has been moved.")
-
-        # Once all files have been moved, remove the source folder
-        shutil.rmtree(src_folder)
-        print(f"Source folder '{src_folder}' has been removed.")
-        return True # Return True to indicate complete process
-
-    except KeyboardInterrupt:
-        print("Process interrupted by user.")
-        return False  # Return False to indicate incomplete process
-
-
-def transfer_folder_with_retry(source_folder, destination_folder, max_retries, retry_delay):
-    """ Transfer a single source folder to the destination folder.
-    Retry if a network-related error occurs during transfer.
-    If the destination folder already exists, merge the folders and move files.
-    
-    args:
-        source_folder (str): path to source folder
-        destination_folder (str): path to destination folder
-        max_retries (int): number of retries before process is stopped, default 10
-        retry_delay (float): delay in seconds from error to transfer is retried, default 5 seconds
-    """
-    
-    retry_count = 0
-    while retry_count <= max_retries:
-        try:
-            # Convert to Path objects for easier handling
-            source = Path(source_folder)
-            destination = Path(destination_folder)
-
-            # Create destination folder path
-            new_destination = destination / source.name
-
-            #Merge folder, if folder already exists
-            if new_destination.exists():
-                print(f"Destination folder '{new_destination}' already exists. Merging and moving folders.")
-
-                # Checks return value of the merge_and_move_folders()
-                if not merge_and_move_folders(source_folder, new_destination):
-                    print("Transfer failed. Error while merging folders.")
-                    break
+            
+            return True
+        
+        except shutil.Error as e:
+            if "network" in str(e).lower(): # Retry if a network error is detected
+                print(f"Network error occurred. Retrying after {self.retry_delay} seconds.")
+                time.sleep(self.retry_delay) # Wait before retrying
+                return False
+            
             else:
-                # Move the entire folder to the destination
-                shutil.move(source, new_destination)
-                print(f"Successfully moved: {source} to {new_destination}")
+                print(f"Error moving folder: {e}")
+                return False # Exit the loop if it's not a network error
 
-            print("Folder transfer complete.")
-            break  # Exit the loop if the transfer was successful
-
-        except (shutil.Error) as e:
-            if "network error" not in e:
-                print(f"Error moving folder: {e}")    
-                break # Exit the loop if it's not a network error
-            
-            retry_count += 1
-            time.sleep(retry_delay)  # Wait before retrying
-            
-            if retry_count > max_retries:
-                print(f"Exceeded maximum retries. Transfer failed.")
-                raise e # Raise the exception after the final attempt
-            
-        except KeyboardInterrupt:
-            print("Process interrupted by user.")
-            return False
-
-def transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries, retry_delay):
-    """ Transfer multiple source folders to the destination folder one by one.
-    Retry if a network-related error occurs during transfer for each folder.
-    
-    args:
-        source_folders(list of strings): list of paths to source folders
-        destination_folder(str): path to destination folder
-        max_retries(int): number of retries before process is stopped, default 10
-        retry_delay(float): delay in seconds from error to transfer is retried, default 5 seconds
-        
-    """
-    try:
-        with tqdm(total=len(source_folders), desc="Transferring Folders", unit="folder") as folder_pbar:
-        
-            for source_folder in source_folders:
-                # Check if source folder exists, if not, continue with the next folder
-                if not os.path.exists(source_folder):
-                    print(f"Source folder '{source_folder}' does not exist. Skipping.")
-                    folder_pbar.update(1)   # Increase progress bar with 1
-                    continue
-        
-                print(f"\nTransferring folder: {source_folder}")
-                if transfer_folder_with_retry(source_folder, destination_folder, max_retries, retry_delay):
-                    folder_pbar.update(1)
+    def transfer_folder_with_retry(self, source_folder:str, destination_folder:str)->bool:
+        """ Transfer a single source folder to the destination folder.
+        Retry if a network-related error occurs during transfer.
+        args:
+            source_folder (str): path to source folder
+            destination_folder (str): path to destination folder
+        """
+        source = Path(source_folder)
+        destination = Path(destination_folder) / source.name # Create destination folder path
+                
+        while True:
+            try:
+                if destination.exists(): #Merge folder, if folder already exists
+                    print(f"Folder '{destination}' already exists. Merging folders.")
+                    if not self.merge_and_move_folders(source_folder, destination): # Checks return value
+                        print("Transfer failed. Error while merging folders.")
+                        return
                 else:
-                    break
+                    shutil.move(source, destination) # Move the entire folder to the destination
+                    print(f"Successfully moved: {source}")
 
-    except KeyboardInterrupt:
-        print("Process interrupted by user.")
+                print("Folder transfer complete.")
+                return
 
+            except (shutil.Error) as e:
+                if "network" in str(e).lower(): # Retry if a network error is detected
+                    print(f"Network error occurred. Retrying after {self.retry_delay} seconds.")
+                    time.sleep(self.retry_delay) # Wait before retrying
+                else: 
+                    print(f"Error moving folder: {e}")
+                    return
+
+    def transfer_multiple_folders_with_retry(self, source_folders: list[str], destination_folder: str):
+        """ Transfer multiple source folders to the destination folder one by one.
+        args:
+            source_folders(list of strings): list of paths to source folders
+            destination_folder(str): path to destination folder
+        """
+        for source_folder in tqdm(source_folders, desc="Transferring folders"):
+            if not os.path.exists(source_folder): # Check if source folder exists, if not, continue with the next folder
+                print(f"Source folder '{source_folder}' does not exist. Skipping.")
+                continue
+        
+            print(f"\nTransferring folder: {source_folder}")
+            self.transfer_folder_with_retry(source_folder, destination_folder)     
 
 # Example usage. Script executes if run directly (not when imported as a module).
 if __name__ == "__main__":
@@ -148,4 +110,6 @@ if __name__ == "__main__":
         ]
     destination_folder = "/Path/To/Destination/Folder"
 
-    transfer_multiple_folders_with_retry(source_folders, destination_folder, max_retries = 10, retry_delay = 5)
+    # Create an instance of FolderTransfer with a retry delay of 5 seconds
+    transfer_tool = FileTransfer(retry_delay=5)
+    transfer_tool.transfer_multiple_folders_with_retry(source_folders, destination_folder)
