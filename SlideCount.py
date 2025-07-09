@@ -31,14 +31,14 @@ class FileCounter:
                         count += 1
         except (PermissionError, FileNotFoundError) as e:
             print(f"Skipping {path}: {e}")
-
+        print(f"Number of files in {path}: {count}") 
         return count
     
 if __name__ == '__main__':
     directory_paths = [
-        'path'
+        'path/to/directory'
     ]
     file_type = '.mrxs'
 
     MRXScounter = FileCounter(directory_paths, file_type)
-    MRXScounter.get_file_count()    
+    MRXScounter.get_file_count()
