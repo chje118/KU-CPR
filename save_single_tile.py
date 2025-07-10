@@ -1,4 +1,6 @@
-# Test, saving one tile from Whole Slide Image
+"""
+Script to understand how to load WSIs using the OpenSlide library and extract tiles.
+"""
 
 import openslide
 
@@ -13,7 +15,7 @@ except Exception as e:
     exit()
 
 # Get thumbnail to explore image
-thumbnail = slide.get_thumbnail([1000,1000])
+thumbnail = slide.get_thumbnail((1000,1000))
 thumbnail = thumbnail.convert("RGB")
 thumbnail.save('thumbnail_example.png')
 
