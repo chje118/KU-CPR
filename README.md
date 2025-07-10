@@ -35,7 +35,3 @@ Dependencies:
 - pathlib
 - time
 - tqdm
-
-Notes: 
-- Ensure the source and destination paths are correct and accessible.
-- Handle interruptions and exceptions as needed.
