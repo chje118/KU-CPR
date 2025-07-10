@@ -1,17 +1,19 @@
-# # Count number of files of a given type in a list of directories
+"""
+Count number of files of a given type in a list of directories.
+"""
 
 import os
 
 class FileCounter:
-    """Class to count files in a list of directories (including subdirectories)."""
-    
+    """Class to count files in a list of directories."""
     def __init__(self, directories: list[str], file_type: str):
         self.directories = directories
         self.file_type = file_type
 
-    def get_file_count(self)-> str:
+    def get_file_count(self)-> None:
+        """ Print total number of files. """
         count = self.file_count()
-        return print(f'Total number of {file_type} files: {count}')     
+        return print(f'Total number of {self.file_type} files: {count}')     
     
     def file_count(self) -> int:
         """ Count total number of files in the list of directories."""
@@ -38,6 +40,7 @@ if __name__ == '__main__':
     directory_paths = [
         'path/to/directory'
     ]
+
     file_type = '.mrxs'
 
     MRXScounter = FileCounter(directory_paths, file_type)
