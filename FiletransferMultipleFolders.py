@@ -1,5 +1,5 @@
-#Transfer of files from multiple local folders to network drive
-#Gaps in network connection results in interrupted file transfer, with error message: "An unexpected network error occurred".
+# Transfer of files from multiple local folders to network drive
+# Gaps in network connection results in interrupted file transfer, with error message: "An unexpected network error occurred".
 
 import os
 import shutil
@@ -120,7 +120,12 @@ def transfer_multiple_folders_with_retry(source_folders, destination_folder):
 
 if __name__ == "__main__":
     source_folders = [
-        "PATH"
+        "D:\Slides 07.05.2025",
+        "D:\Slides 19.06.2025",
+        "D:\Slides 23.06.2025",
+        "D:\Slides 25.06.2025",
+        "D:\Slides 27.06.2025",
+        "E:\Slides"
     ]
-    destination_folder = "PATH"
+    destination_folder = "\\regsj.intern\appl\Deep_Visual_Proteomics"
     transfer_multiple_folders_with_retry(source_folders, destination_folder)
