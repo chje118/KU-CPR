@@ -5,8 +5,6 @@ import os
 import shutil
 from pathlib import Path
 import time
-from tqdm import tqdm
-
 
 def merge_and_move_folders(source_folder, destination_folder, retry_delay = 5, max_retries = 15):
     ''' Move source folder into destination folder.
@@ -107,7 +105,7 @@ def transfer_multiple_folders_with_retry(source_folders, destination_folder):
         destination_folder(str): path to destination folder
     '''
    
-    for source_folder in tqdm(source_folders):
+    for source_folder in source_folders:
         if not os.path.exists(source_folder): # Check if source folder exists, if not, continue with the next folder
             print(f"Source folder '{source_folder}' does not exist. Skipping.")
             continue
@@ -120,12 +118,12 @@ def transfer_multiple_folders_with_retry(source_folders, destination_folder):
 
 if __name__ == "__main__":
     source_folders = [
-        "D:\Slides 07.05.2025",
-        "D:\Slides 19.06.2025",
-        "D:\Slides 23.06.2025",
-        "D:\Slides 25.06.2025",
-        "D:\Slides 27.06.2025",
-        "E:\Slides"
+        "D:/Slides 07.05.2025",
+        "D:/Slides 19.06.2025",
+        "D:/Slides 23.06.2025",
+        "D:/Slides 25.06.2025",
+        "D:/Slides 27.06.2025",
+        "E:/Slides"
     ]
-    destination_folder = "\\regsj.intern\appl\Deep_Visual_Proteomics"
+    destination_folder = "//regsj.intern/appl/Deep_Visual_Proteomics"
     transfer_multiple_folders_with_retry(source_folders, destination_folder)
