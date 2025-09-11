@@ -125,22 +125,3 @@ if __name__ == "__main__":
     tcodes = snomed.get_codes_by_letter('T')
     tcodes["Category"] = tcodes["SKSkode"].apply(categorize_snomed)
     print(tcodes.sample(5))
-
-
-
-
-# # Get all unique clusters
-# T_clusters = df_T["T prefix"].unique()
-
-# for cluster in T_clusters:
-# print(f"\nCluster {cluster}:")
-# # Select rows for this cluster
-# cluster_rows = df_T[df_T["T prefix"] == cluster]
-# # Print the first 3 kodetekst entries
-# print(cluster_rows["Kodetekst"].head(3).to_list())
-
-# # Dictionary T codes
-# mcode_dict = df_M.groupby("M prefix")["Kodetekst"].first().to_dict()
-
-# # Map this to a new column in the DataFrame
-# df_M["M category"] = df_M["M prefix"].map(mcode_dict)
