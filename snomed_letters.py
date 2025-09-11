@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Paths to Metadata
-snomed_path = "C:/Users/chris/OneDrive/Dokumenter/KU CPR/patoSnoMed_2025-04.xlsx"
+snomed_path = "C:/Users/chris/OneDrive/Dokumenter/SDU/Master's Thesis Project/patoSnoMed_2025-04.xlsx"
 
 # Check available sheet names
 xls_snomed = pd.read_excel(snomed_path)
@@ -20,3 +20,4 @@ def get_first_letters(codes):
 # Get unique first letters
 first_letters = get_first_letters(df_snomed['SKSkode'].dropna().unique())
 print('SNOMED letters:', first_letters)
+
