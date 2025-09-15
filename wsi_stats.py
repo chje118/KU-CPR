@@ -68,11 +68,12 @@ class WSIStatsCache:
     def get_stats_dicts(self):
         return [stat.to_dict() for stat in self.stats]
 
-def main():
+def main(reload=True):
     cache = WSIStatsCache(ROOT_DIR, CACHE_FILE)
     cache.load_cache()
-    cache.scan_files()  # Always scan for new files
-    cache.save_cache()
+    if reload:
+        cache.scan_files()  # Scan for new/changed files
+        cache.save_cache()
     stats_dicts = cache.get_stats_dicts()
     # Create DataFrame with filenames as index
     df = pd.DataFrame(stats_dicts)
