@@ -77,7 +77,7 @@ def main():
     # Create DataFrame with filenames as index
     df = pd.DataFrame(stats_dicts)
     df.set_index("filename", inplace=True)
-    print(df.head())
+    return df
 
 if __name__ == "__main__":
     main()
