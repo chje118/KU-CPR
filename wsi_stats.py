@@ -1,6 +1,7 @@
 import os
 import pickle
 from datetime import datetime
+import pandas as pd
 
 ROOT_DIR = "/path/to/wsi/folder"
 CACHE_FILE = "/path/to/wsi/cache"
@@ -72,9 +73,11 @@ def main():
     cache.load_cache()
     cache.scan_files()  # Always scan for new files
     cache.save_cache()
-    # Example: print first 5 entries
-    for entry in cache.get_stats_dicts()[:5]:
-        print(entry)
+    stats_dicts = cache.get_stats_dicts()
+    # Create DataFrame with filenames as index
+    df = pd.DataFrame(stats_dicts)
+    df.set_index("filename", inplace=True)
+    print(df.head())
 
 if __name__ == "__main__":
     main()
