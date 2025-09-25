@@ -2,7 +2,7 @@
 ## Novo Nordisk Foundation Center for Protein Research
 
 **Scripts**
-*FiletransferMultipleFolders.py*
+*file_transfer.py*
 Script to transfer files from multiple local folders to a network drive. Retries if a network-related error occurs during transfer.
 
 *save_single_tile.py*
