@@ -118,12 +118,8 @@ def transfer_multiple_folders_with_retry(source_folders, destination_folder):
 
 if __name__ == "__main__":
     source_folders = [
-        "D:/Slides 07.05.2025",
-        "D:/Slides 19.06.2025",
-        "D:/Slides 23.06.2025",
-        "D:/Slides 25.06.2025",
-        "D:/Slides 27.06.2025",
-        "E:/Slides"
+        "path/to/local/folder1",
+        "path/to/local/folder2",
     ]
-    destination_folder = "//regsj.intern/appl/Deep_Visual_Proteomics"
+    destination_folder = "path/to/network/destination"
     transfer_multiple_folders_with_retry(source_folders, destination_folder)
