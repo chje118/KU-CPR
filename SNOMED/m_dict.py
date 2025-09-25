@@ -1,5 +1,5 @@
 import pandas as pd
-from snomed_dict import SNOMED, SNOMEDHierarchy
+from SNOMED.snomed_dict import SNOMED, SNOMEDHierarchy
 
 if __name__ == "__main__":
     # Load SNOMED data
