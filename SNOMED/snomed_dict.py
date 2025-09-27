@@ -192,3 +192,7 @@ if __name__ == "__main__":
     
     print("\nSubregions of T00:")
     t_hierarchy.list_subregions('T00')
+
+    # Example usage to edit hierarchy manually
+    t_hierarchy.merge_main_regions('T99', ['T00', 'T01'], new_name="Custom merged region")
+    t_hierarchy.list_regions(edited=True)
