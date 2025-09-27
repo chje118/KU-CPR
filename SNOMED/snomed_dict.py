@@ -1,4 +1,5 @@
 import pandas as pd
+import copy
 
 class SNOMED: 
     """ Class to handle SNOMED codes. """
@@ -29,6 +30,7 @@ class SNOMEDHierarchy:
         self.code_to_region = {}
         self.code_to_subregion = {}
         self.hierarchy = self._build_hierarchy()
+        self.edited_hierarchy = copy.deepcopy(self.hierarchy)  # Keep an editable copy
 
     def _build_hierarchy(self):
         hierarchy = {}
@@ -58,17 +60,15 @@ class SNOMEDHierarchy:
             self.code_to_subregion[code] = sub
         return hierarchy
 
-    def get_sub_dict(self, code_prefix):
-        """Return a dict by prefix. """
-        # Main region 
+    def get_sub_dict(self, code_prefix, edited=False):
+        """Return a dict by prefix. Set edited=True to use the edited hierarchy."""
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
         if len(code_prefix) == self.main_len:
-            return self.hierarchy.get(code_prefix)
-        
-        # Subregion
+            return hierarchy.get(code_prefix)
         elif len(code_prefix) == self.sub_len:
             main = code_prefix[:self.main_len]
             return (
-                self.hierarchy.get(main, {})
+                hierarchy.get(main, {})
                 .get("subregions", {})
                 .get(code_prefix)
             )
@@ -77,33 +77,34 @@ class SNOMEDHierarchy:
                 f"Prefix must be {self.main_len} (main region) or {self.sub_len} (subregion) characters long"
             )
 
-    def get_regions(self, code):
+    def get_regions(self, code, edited=False):
         """ Get main region code, main region name, and subregion name for a given code."""
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
         region = self.code_to_region.get(code)
-        region_name = self.hierarchy[region]["name"]
+        region_name = hierarchy[region]["name"]
 
         subregion = self.code_to_subregion.get(code)
-        subregion_name = self.hierarchy[region]["subregions"].get(subregion, {}).get("name")
+        subregion_name = hierarchy[region]["subregions"].get(subregion, {}).get("name")
 
-        codes_list = self.hierarchy[region]["subregions"].get(subregion, {}).get("codes", [])
+        codes_list = hierarchy[region]["subregions"].get(subregion, {}).get("codes", [])
         code_name = next((c["text"] for c in codes_list if c["code"] == code), "")
 
         return region, region_name, subregion_name, code_name
-   
-    def list_regions(self):
-        for region in sorted(self.hierarchy.keys()):
-            # Count all codes in all subregions
-            count = sum(len(sub["codes"]) for sub in self.hierarchy[region]["subregions"].values())
-            region_name = self.hierarchy[region]["name"] if self.hierarchy[region] else "Unknown"
+
+    def list_regions(self, edited=False):
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+        for region in sorted(hierarchy.keys()):
+            count = sum(len(sub["codes"]) for sub in hierarchy[region]["subregions"].values())
+            region_name = hierarchy[region]["name"] if hierarchy[region] else "Unknown"
             print(f"{region}: {region_name} ({count} codes)")
 
-    def list_subregions(self, region, max_examples=None):
-        """Print subregions (TXXX) for a given main region (TXX) in a readable format."""
-        if region not in self.hierarchy:
+    def list_subregions(self, region, max_examples=None, edited=False):
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+        if region not in hierarchy:
             print(f"Region {region} not found.")
             return
 
-        subregions = self.hierarchy[region]["subregions"]
+        subregions = hierarchy[region]["subregions"]
         for subregion in sorted(subregions.keys()):
             codes = subregions[subregion]["codes"]
             subregion_name = codes[0]["text"] if codes else "Unknown"
@@ -115,86 +116,62 @@ class SNOMEDHierarchy:
                 print(f"    {code_info['code']}: {code_info['text']}")
 
     def merge_main_regions(self, new_region, regions_to_merge, new_name=None):
-        """
-        Concatenate two or more main regions into one new main region.
-        - new_region: str, the code for the new main region (e.g. 'T99')
-        - regions_to_merge: list of str, the main region codes to merge (e.g. ['T00', 'T01'])
-        - new_name: str, optional name for the new region (default: name from first region merged)
-        """
         merged_subregions = {}
         for region in regions_to_merge:
-            if region not in self.hierarchy:
+            if region not in self.edited_hierarchy:
                 print(f"Region {region} not found, skipping.")
                 continue
-            for subregion, sub_dict in self.hierarchy[region]["subregions"].items():
+            for subregion, sub_dict in self.edited_hierarchy[region]["subregions"].items():
                 if subregion not in merged_subregions:
                     merged_subregions[subregion] = {
                         "name": sub_dict["name"],
                         "codes": []
                     }
                 merged_subregions[subregion]["codes"].extend(sub_dict["codes"])
-        # Set new region name
         if not new_name:
-            # Use name from first region, or "Merged Region"
-            new_name = self.hierarchy[regions_to_merge[0]]["name"] if regions_to_merge else "Merged Region"
-        # Overwrite hierarchy
-        self.hierarchy[new_region] = {
+            new_name = self.edited_hierarchy[regions_to_merge[0]]["name"] if regions_to_merge else "Merged Region"
+        self.edited_hierarchy[new_region] = {
             "name": new_name,
             "subregions": merged_subregions
         }
-        # Remove old regions
         for region in regions_to_merge:
-            if region in self.hierarchy:
-                del self.hierarchy[region]
+            if region in self.edited_hierarchy:
+                del self.edited_hierarchy[region]
 
     def update_region(self, region, new_name):
-        """
-        Update the name of a main region.
-        - region: str, the main region code (e.g. 'T00')
-        - new_name: str, the new name for the region
-        """
-        if region in self.hierarchy:
-            self.hierarchy[region]["name"] = new_name
+        if region in self.edited_hierarchy:
+            self.edited_hierarchy[region]["name"] = new_name
         else:
             print(f"Region {region} not found.")
 
     def split_main_region(self, original_region, subregion_map):
-        """
-        Split a main region into multiple new main regions.
-        - original_region: str, the main region code to split (e.g. 'T00')
-        - subregion_map: dict, mapping new region codes to lists of subregion codes to move.
-          Example: {'T00A': ['T000', 'T001'], 'T00B': ['T002']}
-        """
-        if original_region not in self.hierarchy:
+        if original_region not in self.edited_hierarchy:
             print(f"Region {original_region} not found.")
             return
-    
-        original_subregions = self.hierarchy[original_region]["subregions"]
-    
+
+        original_subregions = self.edited_hierarchy[original_region]["subregions"]
+
         for new_region, subregion_list in subregion_map.items():
             new_subregions = {}
             for subregion in subregion_list:
                 if subregion in original_subregions:
                     new_subregions[subregion] = original_subregions[subregion]
-            # Use the name of the first subregion as the new region name, or "Split Region"
             new_name = (
                 next(iter(new_subregions.values()))["name"]
                 if new_subregions else "Split Region"
             )
-            self.hierarchy[new_region] = {
+            self.edited_hierarchy[new_region] = {
                 "name": new_name,
                 "subregions": new_subregions
             }
-    
-        # Remove moved subregions from the original region
+
         for subregion_list in subregion_map.values():
             for subregion in subregion_list:
                 if subregion in original_subregions:
                     del original_subregions[subregion]
-        
-        # Remove the original region if no subregions left
+
         if not original_subregions:
-            del self.hierarchy[original_region]
+            del self.edited_hierarchy[original_region]
 
 
 if __name__ == "__main__":
