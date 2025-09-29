@@ -80,11 +80,25 @@ SNOMED_t_patterns = {
 }
 
 # Function to categorize SNOMED codes based on the above patterns
-def categorize_snomed(code):
-    for category, pattern in SNOMED_t_patterns.items():
-        if re.match(pattern, code):
-            return category
-    return "Udefineret"
+def map_codes_to_category(code_list, pattern_dict):
+    categories = set()
+    for code in code_list:
+        if not isinstance(code, str):
+            continue
+        matched = False
+        for category, pattern in pattern_dict.items():
+            if re.match(pattern, code):
+                categories.add(category)
+                matched = True
+                break
+        if not matched:
+            categories.add("Udefineret")
+    return list(set(categories))
+
+# Example Usage
+# Apply the function to the column with lists of T codes
+# df["T category"] = df["T"].apply(lambda x: map_codes_to_category(x, SNOMED_t_patterns))
+# print(df[["T", "T category"]].head())
 
 
 # Max: Define complete code groups mapping from the document
