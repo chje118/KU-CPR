@@ -131,26 +131,39 @@ class SNOMEDHierarchy:
             del self.edited_hierarchy[original_region]
         self._rebuild_code_to_region(edited=True)
 
-    def print_all_regions(self, edited=False, max_examples=None):
-        """ Print all main regions with their subregions and codes."""
+    def print_all_regions(self, edited=False, max_examples=None, incl_subregions=True, incl_codes=True):
+        """ Print all main regions, optionally with their subregions and codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         for region in sorted(hierarchy.keys()):
-            self.print_region(region, edited=edited, max_examples=max_examples)
+            self.print_region(
+                region,
+                edited=edited,
+                max_examples=max_examples,
+                incl_subregions=incl_subregions,
+                incl_codes=incl_codes
+            )
             print("-" * 40)
 
-    def print_region(self, region, edited=False, max_examples=None):
-        """ Print a single region with all its subregions and codes."""
+    def print_region(self, region, edited=False, max_examples=None, incl_subregions=True, incl_codes=True):
+        """ Print a single region, optionally with subregions and codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         if region not in hierarchy:
             print(f"Region {region} not found.")
             return
         region_name = hierarchy[region]["name"]
         print(f"Region:  {region} {region_name}\n")
-        for subregion in sorted(hierarchy[region]["subregions"].keys()):
-            self.print_subregion(region, subregion, edited=edited, max_examples=max_examples)
+        if incl_subregions:
+            for subregion in sorted(hierarchy[region]["subregions"].keys()):
+                self.print_subregion(
+                    region,
+                    subregion,
+                    edited=edited,
+                    max_examples=max_examples,
+                    incl_codes=incl_codes
+                )
 
-    def print_subregion(self, region, subregion, edited=False, max_examples=None):
-        """ Print a single subregion and its codes."""
+    def print_subregion(self, region, subregion, edited=False, max_examples=None, incl_codes=True):
+        """ Print a single subregion and optionally its codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         subregions = hierarchy[region]["subregions"]
         if subregion not in subregions:
@@ -159,9 +172,10 @@ class SNOMEDHierarchy:
         subregion_name = subregions[subregion]["name"]
         codes = subregions[subregion]["codes"]
         print(f"{subregion}: {subregion_name} ({len(codes)} codes)")
-        for i, code_info in enumerate(codes):
-            if max_examples is not None and i >= max_examples:
-                print(f"    ... and {len(codes) - max_examples} more codes")
-                break
-            print(f"    {code_info['code']}: {code_info['text']}")
+        if incl_codes:
+            for i, code_info in enumerate(codes):
+                if max_examples is not None and i >= max_examples:
+                    print(f"    ... and {len(codes) - max_examples} more codes")
+                    break
+                print(f"    {code_info['code']}: {code_info['text']}")
         print("")
