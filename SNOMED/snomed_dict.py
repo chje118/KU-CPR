@@ -63,6 +63,17 @@ class SNOMEDHierarchy:
                     self.code_to_region[code] = main_region
                     self.code_to_subregion[code] = subregion
 
+    def code_to_main_region_name(self, code, edited=False):
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+        main_region = self.code_to_region.get(code)
+        if main_region is None:
+            print(f"Code {code} not found in code_to_region mapping.")
+            return None
+        if main_region not in hierarchy:
+            print(f"Main region {main_region} for code {code} not found in hierarchy.")
+            return None
+        return hierarchy[main_region]["name"]
+
     def get_code_info(self, code, edited=False):
         """Return (main_region, main_name, subregion, subregion_name, code_text) for a code."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
@@ -104,6 +115,7 @@ class SNOMEDHierarchy:
             self.edited_hierarchy[region]["name"] = new_name
         else:
             print(f"Region {region} not found.")
+        self._rebuild_code_to_region(edited=True)
 
     def split_main_region(self, original_region, subregion_map):
         if original_region not in self.edited_hierarchy:
@@ -131,7 +143,15 @@ class SNOMEDHierarchy:
             del self.edited_hierarchy[original_region]
         self._rebuild_code_to_region(edited=True)
 
-    def print_all_regions(self, edited=False, max_examples=None, incl_subregions=True, incl_codes=True):
+    def list_main_regions(self, edited=False):
+        """List only main regions with total number of codes in parentheses."""
+        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+        for region in sorted(hierarchy.keys()):
+            region_name = hierarchy[region]["name"]
+            total_codes = sum(len(sub["codes"]) for sub in hierarchy[region]["subregions"].values())
+            print(f"{region}: {region_name} ({total_codes})")
+
+    def print_all_regions(self, edited=False, max_examples=None):
         """ Print all main regions, optionally with their subregions and codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         for region in sorted(hierarchy.keys()):
@@ -139,12 +159,10 @@ class SNOMEDHierarchy:
                 region,
                 edited=edited,
                 max_examples=max_examples,
-                incl_subregions=incl_subregions,
-                incl_codes=incl_codes
             )
             print("-" * 40)
 
-    def print_region(self, region, edited=False, max_examples=None, incl_subregions=True, incl_codes=True):
+    def print_region(self, region, edited=False, max_examples=None):
         """ Print a single region, optionally with subregions and codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         if region not in hierarchy:
@@ -152,17 +170,15 @@ class SNOMEDHierarchy:
             return
         region_name = hierarchy[region]["name"]
         print(f"Region:  {region} {region_name}\n")
-        if incl_subregions:
-            for subregion in sorted(hierarchy[region]["subregions"].keys()):
-                self.print_subregion(
-                    region,
-                    subregion,
-                    edited=edited,
-                    max_examples=max_examples,
-                    incl_codes=incl_codes
-                )
+        for subregion in sorted(hierarchy[region]["subregions"].keys()):
+            self.print_subregion(
+                region,
+                subregion,
+                edited=edited,
+                max_examples=max_examples,
+            )
 
-    def print_subregion(self, region, subregion, edited=False, max_examples=None, incl_codes=True):
+    def print_subregion(self, region, subregion, edited=False, max_examples=None):
         """ Print a single subregion and optionally its codes."""
         hierarchy = self.edited_hierarchy if edited else self.hierarchy
         subregions = hierarchy[region]["subregions"]
@@ -172,10 +188,9 @@ class SNOMEDHierarchy:
         subregion_name = subregions[subregion]["name"]
         codes = subregions[subregion]["codes"]
         print(f"{subregion}: {subregion_name} ({len(codes)} codes)")
-        if incl_codes:
-            for i, code_info in enumerate(codes):
-                if max_examples is not None and i >= max_examples:
-                    print(f"    ... and {len(codes) - max_examples} more codes")
-                    break
-                print(f"    {code_info['code']}: {code_info['text']}")
+        for i, code_info in enumerate(codes):
+            if max_examples is not None and i >= max_examples:
+                print(f"    ... and {len(codes) - max_examples} more codes")
+                break
+            print(f"    {code_info['code']}: {code_info['text']}")
         print("")
