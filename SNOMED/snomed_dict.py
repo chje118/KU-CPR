@@ -31,8 +31,7 @@ class SNOMEDHierarchy:
         self.sub_len = sub_len
         self.hierarchy = self._build_hierarchy()
         self.edited_hierarchy = copy.deepcopy(self.hierarchy)
-        self._rebuild_code_to_region(edited=False)
-        self._rebuild_code_to_region(edited=True)
+        self._rebuild_code_to_region()
 
     def _build_hierarchy(self):
         """ Build hierarchical structure from codes DataFrame. """
@@ -40,7 +39,7 @@ class SNOMEDHierarchy:
         for _, row in self.codes.iterrows():
             code = row['SKSkode']
             text = row['Kodetekst']
-            if len(code) < self.main_len:
+            if not isinstance(code, str) or len(code) < self.main_len:
                 print(f"Skipping invalid code: {code}")
                 continue
             main = code[:self.main_len]
@@ -52,8 +51,8 @@ class SNOMEDHierarchy:
             hierarchy[main]["subregions"][sub]["codes"].append({"code": code, "text": text})
         return hierarchy
 
-    def _rebuild_code_to_region(self, edited=True):
-        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+    def _rebuild_code_to_region(self):
+        hierarchy = self.edited_hierarchy
         self.code_to_region = {}
         self.code_to_subregion = {}
         for main_region, region_dict in hierarchy.items():
@@ -63,27 +62,24 @@ class SNOMEDHierarchy:
                     self.code_to_region[code] = main_region
                     self.code_to_subregion[code] = subregion
 
-    def code_to_main_region_name(self, code, edited=False):
-        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+    def code_to_main_region_name(self, code):
         main_region = self.code_to_region.get(code)
         if main_region is None:
             print(f"Code {code} not found in code_to_region mapping.")
             return None
-        if main_region not in hierarchy:
+        if main_region not in self.edited_hierarchy:
             print(f"Main region {main_region} for code {code} not found in hierarchy.")
             return None
-        return hierarchy[main_region]["name"]
+        return self.edited_hierarchy[main_region]["name"]
 
-    def get_code_info(self, code, edited=False):
-        """Return (main_region, main_name, subregion, subregion_name, code_text) for a code."""
-        hierarchy = self.edited_hierarchy if edited else self.hierarchy
+    def get_code_info(self, code):
         main = self.code_to_region.get(code)
         sub = self.code_to_subregion.get(code)
-        if not main or not sub or main not in hierarchy or sub not in hierarchy[main]["subregions"]:
+        if not main or not sub or main not in self.edited_hierarchy or sub not in self.edited_hierarchy[main]["subregions"]:
             return None
-        main_name = hierarchy[main]["name"]
-        sub_name = hierarchy[main]["subregions"][sub]["name"]
-        code_text = next((c["text"] for c in hierarchy[main]["subregions"][sub]["codes"] if c["code"] == code), "")
+        main_name = self.edited_hierarchy[main]["name"]
+        sub_name = self.edited_hierarchy[main]["subregions"][sub]["name"]
+        code_text = next((c["text"] for c in self.edited_hierarchy[main]["subregions"][sub]["codes"] if c["code"] == code), "")
         return main, main_name, sub, sub_name, code_text
 
     def merge_main_regions(self, new_region, regions_to_merge, new_name=None):
@@ -108,14 +104,14 @@ class SNOMEDHierarchy:
         for region in regions_to_merge:
             if region in self.edited_hierarchy:
                 del self.edited_hierarchy[region]
-        self._rebuild_code_to_region(edited=True)
+        self._rebuild_code_to_region()
 
     def update_region(self, region, new_name):
         if region in self.edited_hierarchy:
             self.edited_hierarchy[region]["name"] = new_name
         else:
             print(f"Region {region} not found.")
-        self._rebuild_code_to_region(edited=True)
+        self._rebuild_code_to_region()
 
     def split_main_region(self, original_region, subregion_map):
         if original_region not in self.edited_hierarchy:
@@ -141,7 +137,7 @@ class SNOMEDHierarchy:
                     del original_subregions[subregion]
         if not original_subregions:
             del self.edited_hierarchy[original_region]
-        self._rebuild_code_to_region(edited=True)
+        self._rebuild_code_to_region()
 
     def list_main_regions(self, edited=False):
         """List only main regions with total number of codes in parentheses."""
@@ -194,3 +190,16 @@ class SNOMEDHierarchy:
                 break
             print(f"    {code_info['code']}: {code_info['text']}")
         print("")
+
+    def debug_check_code(self, code):
+        """ Debug function to check if a code exists in various structures. """
+        print("In DataFrame:", code in set(self.codes['SKSkode']))
+        print("In code_to_region:", code in self.code_to_region)
+        print("In edited hierarchy:", any(
+            code in [c["code"] for sub in self.edited_hierarchy[region]["subregions"].values() for c in sub["codes"]]
+            for region in self.edited_hierarchy
+        ))
+        print("In original hierarchy:", any(
+            code in [c["code"] for sub in self.hierarchy[region]["subregions"].values() for c in sub["codes"]]
+            for region in self.hierarchy
+        ))
