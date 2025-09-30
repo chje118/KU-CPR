@@ -82,6 +82,11 @@ class SNOMEDHierarchy:
         code_text = next((c["text"] for c in self.edited_hierarchy[main]["subregions"][sub]["codes"] if c["code"] == code), "")
         return main, main_name, sub, sub_name, code_text
 
+    def reset(self):
+        """Reset the edited hierarchy to the original hierarchy."""
+        self.edited_hierarchy = copy.deepcopy(self.hierarchy)
+        self._rebuild_code_to_region()
+
     def merge_main_regions(self, new_region, regions_to_merge, new_name=None):
         merged_subregions = {}
         for region in regions_to_merge:
