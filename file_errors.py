@@ -4,23 +4,53 @@ from pathlib import Path
 import re
 import pandas as pd
 
-data_dir = Path(r"//regsj\.intern/appl/Deep_Visual_Proteomics\")
-# wsi_files = TODO, FILES FROM CODE
+class FindWSIFolder:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
 
-# Extract filename without path
-def get_filename(wsi_path):
-    return Path(wsi_path).name # e.g., slide1.mrxs or slide1 (2).mrxs
+    def get_filename(self, wsi_path):
+        """ Extract the filename from a WSI path. """
+        return Path(wsi_path).name # e.g., slide1.mrxs or slide1 (2).mrxs
 
-# Get base name without extension
-def get_base_name(filename):
-    return Path(filename).stem  # e.g., slide1 or slide1 (2)
+    def get_base_name(self, filename):
+        """ Get base name (folder) without extension. """
+        return Path(filename).stem  # e.g., slide1 or slide1 (2)
 
-# Process each WSI file
-def find_matching_folders(wsi_path):
-    filename = get_filename(wsi_path)
-    base_name = get_base_name(filename)
-    search_name = re.sub(r" \(\d+\)$", "", base_name)
-    return list(data_dir.glob(f"**/{search_name}"))
+    def find_matching_folders(self, wsi_path):
+        """ Find all folders matching the base name of the WSI file. """
+        filename = self.get_filename(wsi_path)
+        base_name = self.get_base_name(filename)
+        search_name = re.sub(r" \(\d+\)$", "", base_name)
+        return list(self.base_dir.glob(f"**/{search_name}"))
 
-# Add a column to the DataFrame with all matched folders for each WSI file
-df['matching_folders'] = [find_matching_folders(wsi_path) for wsi_path in df.index]
+    def find_folders(self, wsi_path):
+        matching_folders = self.find_matching_folders(wsi_path)
+        if not matching_folders:
+            print(f"No matching folder found for {wsi_path}.")
+            return None
+        else:
+            print(f"Number of matching folders found for {wsi_path}: {len(matching_folders)}")
+            return matching_folders
+        
+    def main(self, df, wsi_column):
+        df['matching_folders'] = [self.find_folders(wsi_path) for wsi_path in df[wsi_column]]
+        return df
+
+if __name__ == "__main__":
+    # Example usage
+    df_wsi = pd.read_csv("path/to/wsi_stats.csv")
+    
+    missing_data = df_wsi[
+        (df_wsi["file_size"].isna() | (df_wsi["file_size"] == 0)) | 
+        (df_wsi["data_folder_size"].isna() | (df_wsi["data_folder_size"] == 0))
+    ]
+    
+    missing_data = missing_data.reset_index()  # filename becomes a column
+
+    base_directory = Path(r"\\regsj\.intern\appl\Deep_Visual_Proteomics")
+    finder = FindWSIFolder(base_directory)
+    result_df = finder.main(missing_data, 'filename')
+    print(result_df)
+
+    
+
