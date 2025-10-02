@@ -50,7 +50,38 @@ if __name__ == "__main__":
     base_directory = Path(r"\\regsj\.intern\appl\Deep_Visual_Proteomics")
     finder = FindWSIFolder(base_directory)
     result_df = finder.main(missing_data, 'filename')
-    print(result_df)
-
     
+    # Remove rows without matching folders
+    result_df = result_df[result_df['matching_folders'].notna()]
+    
+    # Look into files with 1 matching folder
+    one_match = result_df[result_df['matching_folders'].apply(lambda x: len(x) == 1)]
+    
+    # If 1 match, check if folder has any files
+    one_match['has_files'] = one_match['matching_folders'].apply(lambda folders: any(f.is_file() for f in folders[0].rglob('*')))
+    
+    # If no files, remove rows
+    one_match = one_match[one_match['has_files']]
+
+    # If has files, check if some have (2) extension
+    one_match['has_(2)_files'] = one_match['matching_folders'].apply(
+        lambda folders: any(re.search(r" \(\d+\)", f.name) for f in folders[0].rglob('*') if f.is_file())
+    )
+
+    # If has (2) files, move all (2) to new folder with (2) suffix
+    for idx, row in one_match.iterrows():
+        if row['has_(2)_files']:
+            original_folder = row['matching_folders'][0]
+            new_folder = original_folder.parent / f"{original_folder.name} (2)"
+            new_folder.mkdir(exist_ok=True)
+            for file in original_folder.rglob('*'):
+                if re.search(r" \(\d+\)", file.name) and file.is_file():
+                    shutil.move(str(file), new_folder / file.name)
+            print(f"Moved (2) files from {original_folder} to {new_folder}")
+    
+    # If multiple matches, log for manual review
+    multiple_matches = result_df[result_df['matching_folders'].apply(lambda x: len(x) > 1)]
+    if not multiple_matches.empty:
+        print("Multiple matching folders found for some WSIs. Please review manually:")
+        print(multiple_matches[['filename', 'matching_folders']])
 
