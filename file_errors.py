@@ -81,6 +81,12 @@ if __name__ == "__main__":
     
     # If multiple matches, log for manual review
     multiple_matches = result_df[result_df['matching_folders'].apply(lambda x: len(x) > 1)]
+
+    # If a folder does not have files, remove it from the list
+    def filter_empty_folders(folders):
+        return [f for f in folders if any(file.is_file() for file in f.rglob('*'))]
+    multiple_matches['matching_folders'] = multiple_matches['matching_folders'].apply(filter_empty_folders)
+
     if not multiple_matches.empty:
         print("Multiple matching folders found for some WSIs. Please review manually:")
         print(multiple_matches[['filename', 'matching_folders']])
