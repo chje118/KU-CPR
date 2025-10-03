@@ -1,6 +1,5 @@
 import os
 import shutil
-from pathlib import Path
 import re
 import pandas as pd
 
@@ -13,23 +12,31 @@ class FindWSIData:
 
     def _get_filename(self, wsi_path):
         """ Extract the filename from a WSI path. """
-        return Path(wsi_path).name # e.g., slide1.mrxs or slide1 (2).mrxs
+        return os.path.basename(wsi_path)
 
     def _get_base_name(self, filename):
         """ Get base name (folder) without extension. """
-        return Path(filename).stem  # e.g., slide1 or slide1 (2)
+        return os.path.splitext(filename)[0]
 
     def _find_matching_folders(self, wsi_path):
         """ Find all folders matching the base name of the WSI file, including (2), (3), etc."""
         filename = self._get_filename(wsi_path)
         base_name = self._get_base_name(filename)
-        search_base = re.sub(r" \(\d+\)$", "", base_name) # remove (number) suffix
-        pattern = re.compile(rf"^{re.escape(search_base)}( \(\d+\))?$") # match folders with base name or base name + (number)
-        return [folder for folder in self.base_dir.glob("**/*") if folder.is_dir() and pattern.match(folder.name)]
+        search_base = re.sub(r" \(\d+\)$", "", base_name)
+        pattern = re.compile(rf"^{re.escape(search_base)}( \(\d+\))?$")
+        matching_folders = []
+        for root, dirs, files in os.walk(self.base_dir):
+            for d in dirs:
+                if pattern.match(d):
+                    matching_folders.append(os.path.join(root, d))
+        return matching_folders
 
     def _has_files(self, folder):
         """Return True if the folder contains any files."""
-        return any(f.is_file() for f in folder.rglob('*'))
+        for _, _, files in os.walk(folder):
+            if files:
+                return True
+        return False
 
     def _filter_empty_folders(self, folders):
         """Return only folders that contain files."""
@@ -53,7 +60,7 @@ class FindWSIData:
     def get_df_results(self):
         self.df['matching_folders'] = [self._find_folders(wsi_path) for wsi_path in self.df[self.col]]
         return self.df
-    
+
     def remove_empty_rows(self):
         """Remove rows from the DataFrame where no matching folders with files were found."""
         self.df_results = self.df_results[self.df_results['matching_folders'].notna() & self.df_results['matching_folders'].map(len) > 0]
@@ -69,7 +76,7 @@ if __name__ == "__main__":
     
     missing_data = missing_data.reset_index()  # filename becomes a column
 
-    base_directory = Path(r"//regsj/.intern/appl/Deep_Visual_Proteomics")
+    base_directory = "//regsj/.intern/appl/Deep_Visual_Proteomics"
     finder = FindWSIData(base_directory, df = missing_data, col = 'filename')
     df_result = finder.df_results
     print("Before removing empty rows:", len(df_result))
