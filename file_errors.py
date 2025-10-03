@@ -19,7 +19,10 @@ class FindWSIData:
         return os.path.splitext(filename)[0]
 
     def _find_matching_folders(self, wsi_path):
-        """ Find all folders matching the base name of the WSI file, including (2), (3), etc."""
+        """
+        Find all folders anywhere under base_dir that match the base name of the WSI file,
+        including numbered variants like 'slide1', 'slide1 (2)', etc.
+        """
         filename = self._get_filename(wsi_path)
         base_name = self._get_base_name(filename)
         search_base = re.sub(r" \(\d+\)$", "", base_name)
