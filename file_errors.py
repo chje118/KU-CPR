@@ -63,7 +63,7 @@ class FindWSIData:
 
     def remove_empty_rows(self):
         """Remove rows from the DataFrame where no matching folders with files were found."""
-        self.df_results = self.df_results[self.df_results['matching_folders'].notna() & self.df_results['matching_folders'].map(len) > 0]
+        self.df_results = self.df_results[self.df_results['matching_folders'].apply(lambda x: x is not None and len(x) > 0)]
 
 if __name__ == "__main__":
     # Example usage
